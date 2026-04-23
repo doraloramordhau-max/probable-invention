@@ -47,25 +47,25 @@ func checkDate(task *db.Task) error {
 func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task db.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeError(w, err)
+		writeErrorStatus(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if task.Title == "" {
-		writeError(w, errTitleRequired)
+		writeErrorStatus(w, http.StatusBadRequest, errTitleRequired)
 		return
 	}
 
 	if err := checkDate(&task); err != nil {
-		writeError(w, err)
+		writeErrorStatus(w, http.StatusBadRequest, err)
 		return
 	}
 
 	id, err := db.AddTask(&task)
 	if err != nil {
-		writeError(w, err)
+		writeErrorStatus(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	writeJSON(w, map[string]string{"id": strconv.FormatInt(id, 10)})
+	writeJSONStatus(w, http.StatusCreated, map[string]string{"id": strconv.FormatInt(id, 10)})
 }

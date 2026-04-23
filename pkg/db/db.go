@@ -34,3 +34,10 @@ func Init(dbFile string) error {
 	DB = db
 	return nil
 }
+
+func Close() error {
+	if DB == nil {
+		return nil
+	}
+	return DB.Close()
+}

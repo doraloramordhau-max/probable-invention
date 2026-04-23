@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -11,22 +12,22 @@ import (
 func putTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task db.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeError(w, err)
+		writeErrorStatus(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if task.ID == "" {
-		writeError(w, errIDRequired)
+		writeErrorStatus(w, http.StatusBadRequest, errIDRequired)
 		return
 	}
 
 	if task.Title == "" {
-		writeError(w, errTitleRequired)
+		writeErrorStatus(w, http.StatusBadRequest, errTitleRequired)
 		return
 	}
 
 	if err := checkDate(&task); err != nil {
-		writeError(w, err)
+		writeErrorStatus(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -55,7 +56,7 @@ func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeJSON(w, map[string]string{"error": "method not allowed"})
+		writeErrorStatus(w, http.StatusMethodNotAllowed, errors.New("method not allowed"))
 		return
 	}
 

@@ -15,13 +15,19 @@ import (
 
 const claimPasswordHash = "ph"
 
+var authPassword string
+
+func initAuth() {
+	authPassword = os.Getenv("TODO_PASSWORD")
+}
+
 func passwordHash(p string) string {
 	h := sha256.Sum256([]byte(p))
 	return hex.EncodeToString(h[:])
 }
 
 func newAuthToken() (string, error) {
-	pass := os.Getenv("TODO_PASSWORD")
+	pass := authPassword
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		claimPasswordHash: passwordHash(pass),
 		"exp":             time.Now().Add(8 * time.Hour).Unix(),
@@ -30,7 +36,7 @@ func newAuthToken() (string, error) {
 }
 
 func validateTokenString(tokenString string) error {
-	pass := os.Getenv("TODO_PASSWORD")
+	pass := authPassword
 	if pass == "" {
 		return nil
 	}
@@ -56,28 +62,28 @@ func validateTokenString(tokenString string) error {
 
 func signinHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeJSON(w, map[string]string{"error": "method not allowed"})
+		writeErrorStatus(w, http.StatusMethodNotAllowed, errors.New("method not allowed"))
 		return
 	}
 	var body struct {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, err)
+		writeErrorStatus(w, http.StatusBadRequest, err)
 		return
 	}
-	want := os.Getenv("TODO_PASSWORD")
+	want := authPassword
 	if want == "" {
-		writeJSON(w, map[string]string{"error": "аутентификация не настроена"})
+		writeErrorStatus(w, http.StatusUnauthorized, errors.New("аутентификация не настроена"))
 		return
 	}
 	if body.Password != want {
-		writeJSON(w, map[string]string{"error": "Неверный пароль"})
+		writeErrorStatus(w, http.StatusUnauthorized, errors.New("Неверный пароль"))
 		return
 	}
 	token, err := newAuthToken()
 	if err != nil {
-		writeError(w, err)
+		writeErrorStatus(w, http.StatusInternalServerError, err)
 		return
 	}
 	writeJSON(w, map[string]string{"token": token})
@@ -85,7 +91,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request) {
 
 func auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if len(os.Getenv("TODO_PASSWORD")) == 0 {
+		if authPassword == "" {
 			next(w, r)
 			return
 		}

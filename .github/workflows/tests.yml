@@ -1,5 +1,8 @@
-# Версия Go должна совпадать с директивой "go" в go.mod (сейчас 1.25.x).
-# Раньше здесь был matrix 1.24.x — при go 1.25.4 в модуле шаг go mod tidy падал.
+# --- О дифе в pull request ---
+# «Красные» строки в сравнении с прошлой версией = удалённый СТАРЫЙ workflow (matrix 1.24,
+# sleep 100, только TestApp). Это нормально. Тесты НЕ убраны: они в шаге
+# «Start server and run tests» (поднять сервер, go test -count=1 ./tests).
+# Версия Go берётся из go.mod, чтобы не было рассинхрона с CI (1.24 vs go 1.25.x).
 name: Go
 
 on: [push, pull_request]
@@ -21,6 +24,9 @@ jobs:
 
       - name: Download modules
         run: go mod download
+
+      - name: Verify modules
+        run: go mod verify
 
       - name: Build
         run: go build -o /dev/null .

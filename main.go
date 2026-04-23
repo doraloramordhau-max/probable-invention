@@ -19,6 +19,11 @@ func main() {
 	if err := db.Init(dbFile); err != nil {
 		log.Fatal(err)
 	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("db close error: %v", err)
+		}
+	}()
 	api.Init()
 
 	port := os.Getenv("TODO_PORT")
